@@ -408,7 +408,98 @@ class JsonDB:
             print(f"\033[91mOops! An error occurred while searching data.\033[0m")
             print(f"\033[93mError details: {e}\033[0m")
             return None
-    
+
+
+    def export_to_csv(self, filename, data=None, delimiter=","):
+        """Exporte les données vers un fichier CSV.
+
+        Args:
+            filename (str): Nom du fichier CSV à créer.
+            data (dict, optional): Données à exporter. Si None, la base de données entière est exportée. Defaults to None.
+            delimiter (str, optional): Délimiteur à utiliser dans le fichier CSV. Defaults to ",".
+        """
+
+        if data is None:
+            data = self.db
+
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            # Obtenir tous les champs uniques
+            fieldnames = set()
+            for row in data.values() if isinstance(data, dict) else data:
+                if isinstance(row, dict):
+                    fieldnames.update(row.keys())
+                else:
+                    print("\033[93mAvertissement: Ignorer la ligne non-dictionnaire lors de l'exportation CSV.\033[0m")
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=delimiter)
+
+            # Écrire l'en-tête
+            writer.writeheader()
+
+            # Écrire les données
+            for row in data.values() if isinstance(data, dict) else data:
+                if isinstance(row, dict):
+                    writer.writerow(row)
+                else:
+                    print("\033[93mAvertissement: Ignorer la ligne non-dictionnaire lors de l'exportation CSV.\033[0m")
+
+    def export_to_xlsx(self, filename, data=None):
+        """Exporte les données vers un fichier XLSX.
+
+        Args:
+            filename (str): Nom du fichier XLSX à créer.
+            data (dict, optional): Données à exporter. Si None, la base de données entière est exportée. Defaults to None.
+        """
+        if data is None:
+            data = self.db
+
+        wb = openpyxl.Workbook()
+        sheet = wb.active
+
+        # Écrire les données
+        for row_index, (key, row_data) in enumerate(data.items(), start=2):
+            sheet.cell(row=row_index, column=1).value = key
+            if isinstance(row_data, dict):
+                for col_index, (k, v) in enumerate(row_data.items(), start=2):
+                    sheet.cell(row=1, column=col_index).value = k
+                    sheet.cell(row=row_index, column=col_index).value = v
+            else:
+                sheet.cell(row=1, column=2).value = 'Valeur'
+                sheet.cell(row=row_index, column=2).value = row_data
+
+        wb.save(filename)
+
+    def export_to_sqlite(self, db_name, table_name, data=None):
+        """Exporte les données vers une base de données SQLite.
+
+        Args:
+            db_name (str): Nom de la base de données SQLite.
+            table_name (str): Nom de la table à créer.
+            data (dict, optional): Données à exporter. Si None, la base de données entière est exportée. Defaults to None.
+        """
+        if data is None:
+            data = self.db
+
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+
+        # Créer la table dynamiquement en fonction de la structure des données
+        if data:
+            first_row = data[next(iter(data))] if isinstance(data, dict) else data[0]
+            columns = [f"{k} TEXT" for k in first_row.keys() if isinstance(first_row, dict) else ["value TEXT"]]
+            create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
+            cursor.execute(create_table_query)
+
+            # Insérer les données
+            for row in data.values() if isinstance(data, dict) else data:
+                if isinstance(row, dict):
+                    placeholders = ', '.join(['?'] * len(row))
+                    insert_query = f"INSERT INTO {table_name} ({', '.join(row.keys())}) VALUES ({placeholders})"
+                    cursor.execute(insert_query, tuple(row.values()))
+                else:
+                    cursor.execute(f"INSERT INTO {table_name} (value) VALUES (?)", (row,))
+
+        conn.commit()
+        conn.close()
     # ==================================================
     #               UTILITY FUNCTIONS
     #         (Methods for commonly used utilities)
