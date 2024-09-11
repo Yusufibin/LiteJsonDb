@@ -418,6 +418,7 @@ class JsonDB:
             data (dict, optional): Données à exporter. Si None, la base de données entière est exportée. Defaults to None.
             delimiter (str, optional): Délimiteur à utiliser dans le fichier CSV. Defaults to ",".
         """
+        import csv
 
         if data is None:
             data = self.db
@@ -476,6 +477,7 @@ class JsonDB:
             table_name (str): Nom de la table à créer.
             data (dict, optional): Données à exporter. Si None, la base de données entière est exportée. Defaults to None.
         """
+        import sqlite3 
         if data is None:
             data = self.db
 
