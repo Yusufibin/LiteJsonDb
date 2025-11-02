@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 from typing import Any, Dict, Optional
 from .handler import (
     Encryption, DatabaseOperations, DataManipulation
@@ -24,6 +25,12 @@ if not os.path.exists(DATABASE_DIR):
 def setup_logging(enable_log):
     if enable_log:
         logging.basicConfig(filename=os.path.join(DATABASE_DIR, 'LiteJsonDb.log'), level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        # Add console handler for user messages
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_formatter = logging.Formatter('%(message)s')
+        console_handler.setFormatter(console_formatter)
+        logging.getLogger().addHandler(console_handler)
 
 class JsonDB(Encryption, DatabaseOperations, DataManipulation):
     """
@@ -57,7 +64,8 @@ class JsonDB(Encryption, DatabaseOperations, DataManipulation):
         self.observers = {}
         self.csv_exporter = CSVExporter(DATABASE_DIR)
         setup_logging(self.enable_log)
-        Encryption.__init__(self, encryption_method, encryption_key) 
+        self.logger = logging.getLogger('LiteJsonDb')
+        Encryption.__init__(self, encryption_method, encryption_key)
         DatabaseOperations.__init__(self, enable_log, auto_backup)
         DataManipulation.__init__(self)
         self._load_db()
@@ -75,7 +83,7 @@ class JsonDB(Encryption, DatabaseOperations, DataManipulation):
         try:
             telegram_bot.backup_to_telegram(self.filename)
         except Exception as e:
-            print(f"\033[90m#bugs\033[0m Telegram backup took a wrong turn! Error: {e}")
+            self.logger.error(f"\033[90m#bugs\033[0m Telegram backup took a wrong turn! Error: {e}")
             if self.enable_log:
                 logging.error(f"Error sending backup to Telegram: {e}")
 
@@ -91,40 +99,42 @@ class JsonDB(Encryption, DatabaseOperations, DataManipulation):
                 data = self.db[data_key]
                 csv_path = self.csv_exporter.export(data, f"{data_key}_export.csv")
                 if csv_path:
-                    print(f"🎉 Hooray! CSV exported to: {csv_path}")
+                    self.logger.info(f"🎉 Hooray! CSV exported to: {csv_path}")
                 else:
-                    print(f"\033[90m#bugs\033[0m Could not export '{data_key}' to CSV!")
+                    self.logger.error(f"\033[90m#bugs\033[0m Could not export '{data_key}' to CSV!")
             else:
-                 print(f"\033[90m#bugs\033[0m Key '{data_key}' not found, is it hiding? Tip: Double-check it!")
+                  self.logger.error(f"\033[90m#bugs\033[0m Key '{data_key}' not found, is it hiding? Tip: Double-check it!")
         else:
             if self.db:
                 csv_path = self.csv_exporter.export(self.db, "full_database_export.csv")
                 if csv_path:
-                    print(f"🎉 Full database exported to: {csv_path}")
+                    self.logger.info(f"🎉 Full database exported to: {csv_path}")
                 else:
-                    print("\033[90m#bugs\033[0m Database export failed. It's shy!")
+                    self.logger.error("\033[90m#bugs\033[0m Database export failed. It's shy!")
             else:
-                print("\033[90m#bugs\033[0m Database is empty, ghost town vibes!")
+                self.logger.error("\033[90m#bugs\033[0m Database is empty, ghost town vibes!")
 
-    def search_data(self, value: Any, key: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def search_data(self, value: Any, key: Optional[str] = None, substring: bool = False, case_sensitive: bool = True) -> Optional[Dict[str, Any]]:
         """
         Searches for a value within the database.
 
-         Args:
-             value (Any): The value to search for.
-             key (Optional[str]): If provided, searches only within the values associated with this key.
-            Returns:
-                Optional[Dict[str, Any]]: Returns the matching dictionary or None if not found.
+          Args:
+              value (Any): The value to search for.
+              key (Optional[str]): If provided, searches only within the values associated with this key.
+              substring (bool): If True, perform substring search. Defaults to False.
+              case_sensitive (bool): If False, perform case-insensitive search. Defaults to True.
+             Returns:
+                 Optional[Dict[str, Any]]: Returns the matching dictionary or None if not found.
         """
         try:
-            result = search_data(self.db, value, key)
+            result = search_data(self.db, value, key, substring=substring, case_sensitive=case_sensitive)
             if result:
                 return result
             else:
-                print("\033[90m#info\033[0m  Not found! Try another quest?")
+                self.logger.info("Not found! Try another quest?")
                 return None
         except Exception as e:
-            print(f"\033[90m#bugs\033[0m Search party got lost! Error: {e}")
+            self.logger.error(f"Search party got lost! Error: {e}")
             return None
 
     @staticmethod

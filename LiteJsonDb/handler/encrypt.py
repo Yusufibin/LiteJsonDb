@@ -140,5 +140,5 @@ class Encryption:
             decoded_data = self.fernet.decrypt(encoded_data.encode('utf-8'))
             return json.loads(decoded_data)
         except Exception as e:
-            print("\033[91m#bugs\033[0m Fernet decryption failed.")
+            self.logger.error("\033[91m#bugs\033[0m Fernet decryption failed.")
             raise ValueError("\033[91m#bugs\033[0m Decryption failed: invalid key or data.")

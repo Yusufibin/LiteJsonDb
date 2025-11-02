@@ -30,13 +30,14 @@ class DataManipulation:
             types = {}
             for key, value in data.items():
                 if not isinstance(key, str):
-                    print(f"\033[91m#bugs\033[0m Key '{key}' must be a string. Did we stumble upon a non-string key?")
+                    self.logger.error(f"\033[91m#bugs\033[0m Key '{key}' must be a string. Did we stumble upon a non-string key?")
                     return False
                 if key in types and types[key] != type(value):
-                    print(f"\033[91m#bugs\033[0m Conflicting types for key '{key}'.")
+                    self.logger.error(f"\033[91m#bugs\033[0m Conflicting types for key '{key}'.")
                     return False
-                types[key] = type(value)
             return all(isinstance(value, (str, int, float, list, dict, bool, None)) for value in data.values())
+        self.logger.error(f"\033[91m#bugs\033[0m Data must be a dictionary.")
+        return False
         print(f"\033[91m#bugs\033[0m Data must be a dictionary.")
         return False
 
@@ -107,7 +108,7 @@ class DataManipulation:
             if k in data:
                 data = data[k]
             else:
-                print(f"\033[91m#bugs\033[0m No data found at key '{key}'. Double-check the key or try a different path.")
+                self.logger.error(f"\033[91m#bugs\033[0m No data found at key '{key}'. Double-check the key or try a different path.")
                 return None
         return data
 
@@ -123,11 +124,11 @@ class DataManipulation:
             value = {}
 
         if not self.validate_data(value):
-            print(f"\033[91m#bugs\033[0m Invalid data format. Ensure your data is a dictionary with consistent types.")
+            self.logger.error(f"\033[91m#bugs\033[0m Invalid data format. Ensure your data is a dictionary with consistent types.")
             return
 
         if self.key_exists(key):
-            print(f"\033[91m#bugs\033[0m Key '{key}' already exists.  Use db.edit_data('{key}', new_value) to update or add new data.")
+            self.logger.error(f"\033[91m#bugs\033[0m Key '{key}' already exists.  Use db.edit_data('{key}', new_value) to update or add new data.")
             return
 
         self._set_child(self.db, key, value)
@@ -144,11 +145,11 @@ class DataManipulation:
             value (Any): The new value.
         """
         if not self.key_exists(key):
-            print(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot edit. Use 'set_data' to add new data.")
+            self.logger.error(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot edit. Use 'set_data' to add new data.")
             return
 
         if not self.validate_data(value):
-            print(f"\033[91m#bugs\033[0m Invalid data format. Ensure your data is a dictionary with consistent types.")
+            self.logger.error(f"\033[91m#bugs\033[0m Invalid data format. Ensure your data is a dictionary with consistent types.")
             return
 
         keys = key.split('/')
@@ -165,13 +166,13 @@ class DataManipulation:
                         if isinstance(increment_value, (int, float)):
                             current_data[field] += increment_value
                         else:
-                            print(f"\033[91m#bugs\033[0m Increment value for '{field}' is not a number. Provide a numeric value for incrementing (e.g., db.edit_data('users/1', {{'increment': {{'score': 5}}}})).")
+                            self.logger.error(f"\033[91m#bugs\033[0m Increment value for '{field}' is not a number. Provide a numeric value for incrementing (e.g., db.edit_data('users/1', {{'increment': {{'score': 5}}}})).")
                             return
                     else:
-                        print(f"\033[91m#bugs\033[0m Field '{field}' is not a number. Ensure the field exists and is a number before incrementing.")
+                        self.logger.error(f"\033[91m#bugs\033[0m Field '{field}' is not a number. Ensure the field exists and is a number before incrementing.")
                         return
                 else:
-                    print(f"\033[91m#bugs\033[0m Field '{field}' doesn't exist. Make sure the field exists in the data structure; use db.edit_data to set initial values.")
+                    self.logger.error(f"\033[91m#bugs\033[0m Field '{field}' doesn't exist. Make sure the field exists in the data structure; use db.edit_data to set initial values.")
                     return
         else:
             if isinstance(current_data, dict):
@@ -238,14 +239,14 @@ class DataManipulation:
             if k in data:
                 data = data[k]
             else:
-                print(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot remove. Make sure the key path is correct.")
+                self.logger.error(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot remove. Make sure the key path is correct.")
                 return
         if keys[-1] in data:
             del data[keys[-1]]
             self._backup_db()
             self._save_db()
         else:
-            print(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot remove. Make sure the key path is correct.")
+            self.logger.error(f"\033[91m#bugs\033[0m Key '{key}' doesn't exist, cannot remove. Make sure the key path is correct.")
 
     # ==================================================
     #                WHOLE DATABASE
@@ -289,7 +290,7 @@ class DataManipulation:
             if item_id in collection:
                 return collection[item_id]
             else:
-                print(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}'. Check if the ID is correct; use get_subcollection('{collection_name}') to see all items.")
+                self.logger.error(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}'. Check if the ID is correct; use get_subcollection('{collection_name}') to see all items.")
                 return None
         return collection
 
@@ -303,14 +304,14 @@ class DataManipulation:
             value (Any): The value to set.
         """
         if not self.validate_data(value):
-            print(f"\033[91m#bugs\033[0m Invalid data format.  Your data should look like this: {{'name': 'Aliou', 'age': 30}}.")
+            self.logger.error(f"\033[91m#bugs\033[0m Invalid data format.  Your data should look like this: {{'name': 'Aliou', 'age': 30}}.")
             return
 
         if collection_name not in self.db:
             self.db[collection_name] = {}
 
         if item_id in self.db[collection_name]:
-            print(f"\033[91m#bugs\033[0m ID '{item_id}' already exists in collection '{collection_name}'. Use db.edit_subcollection('{collection_name}', '{item_id}', new_value) to update or add new data.")
+            self.logger.error(f"\033[91m#bugs\033[0m ID '{item_id}' already exists in collection '{collection_name}'. Use db.edit_subcollection('{collection_name}', '{item_id}', new_value) to update or add new data.")
             return
 
         self.db[collection_name][item_id] = value
@@ -327,7 +328,7 @@ class DataManipulation:
             value (Any): The new value.
         """
         if not self.validate_data(value):
-            print(f"\033[91m#bugs\033[0m Invalid data format. Your data should look like this: {{'name': 'Aliou', 'age': 30}}.")
+            self.logger.error(f"\033[91m#bugs\033[0m Invalid data format. Your data should look like this: {{'name': 'Aliou', 'age': 30}}.")
             return
 
         if collection_name in self.db and item_id in self.db[collection_name]:
@@ -338,7 +339,7 @@ class DataManipulation:
             self._backup_db()
             self._save_db()
         else:
-            print(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}', cannot edit. Use 'set_subcollection' to create a new item.")
+            self.logger.error(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}', cannot edit. Use 'set_subcollection' to create a new item.")
 
     def remove_subcollection(self, collection_name: str, item_id: Optional[str] = None) -> None:
         """
@@ -354,7 +355,7 @@ class DataManipulation:
                 self._backup_db()
                 self._save_db()
             else:
-                print(f"\033[91m#bugs\033[0m Collection '{collection_name}' not found, cannot remove. Make sure the collection name is correct.")
+                self.logger.error(f"\033[91m#bugs\033[0m Collection '{collection_name}' not found, cannot remove. Make sure the collection name is correct.")
                 return
         else:
             if collection_name in self.db and item_id in self.db[collection_name]:
@@ -362,5 +363,5 @@ class DataManipulation:
                 self._backup_db()
                 self._save_db()
             else:
-                print(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}', cannot remove. Check the ID and collection name; use get_subcollection('{collection_name}') to see all items.")
+                self.logger.error(f"\033[91m#bugs\033[0m ID '{item_id}' not found in collection '{collection_name}', cannot remove. Check the ID and collection name; use get_subcollection('{collection_name}') to see all items.")
                 return

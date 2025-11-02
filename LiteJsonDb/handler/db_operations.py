@@ -33,7 +33,7 @@ class DatabaseOperations:
                 if self.enable_log:
                     logging.info(f"Database file created: {self.filename}")
             except OSError as e:
-                print(f"\033[91m#bugs\033[0m Unable to create database file: {e}")
+                self.logger.error(f"\033[91m#bugs\033[0m Unable to create database file: {e}")
                 raise
         try:
             with open(self.filename, 'r') as file:
@@ -45,7 +45,7 @@ class DatabaseOperations:
             if self.enable_log:
                 logging.info(f"Database loaded from: {self.filename}")
         except (OSError, json.JSONDecodeError) as e:
-            print(f"\033[91m#bugs\033[0m Unable to load database file: {e}")
+            self.logger.error(f"\033[91m#bugs\033[0m Unable to load database file: {e}")
             raise
 
     def _save_db(self) -> None:
@@ -59,7 +59,7 @@ class DatabaseOperations:
             if self.enable_log:
                 logging.info(f"Database saved to {self.filename}")
         except OSError as e:
-            print(f"\033[91m#bugs\033[0m Could not save database: {e}")
+            self.logger.error(f"\033[91m#bugs\033[0m Could not save database: {e}")
             raise
     
     def _backup_db(self) -> None:
@@ -72,7 +72,7 @@ class DatabaseOperations:
                 if self.enable_log:
                     logging.info(f"Backup created: {self.backup_filename}")
             except OSError as e:
-                print(f"\033[91m#bugs\033[0m Unable to create backup: {e}")
+                self.logger.error(f"\033[91m#bugs\033[0m Unable to create backup: {e}")
                 raise
 
     def _restore_db(self) -> None:
@@ -86,9 +86,9 @@ class DatabaseOperations:
                 if self.enable_log:
                     logging.info(f"Database restored from backup: {self.backup_filename}")
             except OSError as e:
-                print(f"\033[91m#bugs\033[0m Unable to restore database: {e}")
+                self.logger.error(f"\033[91m#bugs\033[0m Unable to restore database: {e}")
                 raise
         else:
-            print("\033[91m#bugs\033[0m No backup file found.")
+            self.logger.error("\033[91m#bugs\033[0m No backup file found.")
             if self.enable_log:
                 logging.error("No backup file found to restore.")

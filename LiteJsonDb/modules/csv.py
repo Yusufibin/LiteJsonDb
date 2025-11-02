@@ -1,5 +1,6 @@
 import csv
 import os
+import logging
 from typing import Dict, Any, Union
 
 class CSVExporter:
@@ -42,5 +43,5 @@ class CSVExporter:
                     writer.writerows(data if isinstance(data, list) else [data])
             return filepath
         except Exception as e:
-            print(f"\033[91m#bugs\033[0m CSV export error: {e}")
+            logging.getLogger('LiteJsonDb').error(f"\033[91m#bugs\033[0m CSV export error: {e}")
             return ""
